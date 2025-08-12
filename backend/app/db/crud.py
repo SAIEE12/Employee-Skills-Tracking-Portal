@@ -15,7 +15,7 @@ def get_users(db: Session, skip: int = 0, limit: int = 100) -> List[models.User]
 
 def create_user(db: Session, email: str, name: str, password: str, role: str, 
                 avatar: Optional[str] = None, department: Optional[str] = None, 
-                experience: Optional[int] = None) -> models.User:
+                experience: Optional[int] = None, domain_id: Optional[str] = None) -> models.User:
     hashed_password = get_password_hash(password)
     db_user = models.User(
         email=email,
@@ -24,7 +24,8 @@ def create_user(db: Session, email: str, name: str, password: str, role: str,
         role=role,
         avatar=avatar,
         department=department,
-        experience=experience
+        experience=experience,
+        domain_id=domain_id
     )
     db.add(db_user)
     db.commit()
@@ -49,6 +50,38 @@ def delete_user(db: Session, user_id: str) -> bool:
         return True
     return False
 
+# Domain CRUD
+def get_domain(db: Session, domain_id: str) -> Optional[models.Domain]:
+    return db.query(models.Domain).filter(models.Domain.id == domain_id).first()
+
+def get_domains(db: Session, skip: int = 0, limit: int = 100) -> List[models.Domain]:
+    return db.query(models.Domain).offset(skip).limit(limit).all()
+
+def create_domain(db: Session, name: str, description: Optional[str] = None) -> models.Domain:
+    db_domain = models.Domain(name=name, description=description)
+    db.add(db_domain)
+    db.commit()
+    db.refresh(db_domain)
+    return db_domain
+
+def update_domain(db: Session, domain_id: str, **kwargs) -> Optional[models.Domain]:
+    db_domain = get_domain(db, domain_id)
+    if db_domain:
+        for key, value in kwargs.items():
+            if hasattr(db_domain, key):
+                setattr(db_domain, key, value)
+        db.commit()
+        db.refresh(db_domain)
+    return db_domain
+
+def delete_domain(db: Session, domain_id: str) -> bool:
+    db_domain = get_domain(db, domain_id)
+    if db_domain:
+        db.delete(db_domain)
+        db.commit()
+        return True
+    return False
+
 # Skill CRUD
 def get_skill(db: Session, skill_id: str) -> Optional[models.Skill]:
     return db.query(models.Skill).filter(models.Skill.id == skill_id).first()
@@ -56,8 +89,11 @@ def get_skill(db: Session, skill_id: str) -> Optional[models.Skill]:
 def get_skills(db: Session, skip: int = 0, limit: int = 100) -> List[models.Skill]:
     return db.query(models.Skill).offset(skip).limit(limit).all()
 
-def create_skill(db: Session, name: str, category: str, description: Optional[str] = None) -> models.Skill:
-    db_skill = models.Skill(name=name, category=category, description=description)
+def get_skills_by_domain(db: Session, domain_id: str) -> List[models.Skill]:
+    return db.query(models.Skill).filter(models.Skill.domain_id == domain_id).all()
+
+def create_skill(db: Session, name: str, category: str, description: Optional[str] = None, domain_id: str = None) -> models.Skill:
+    db_skill = models.Skill(name=name, category=category, description=description, domain_id=domain_id)
     db.add(db_skill)
     db.commit()
     db.refresh(db_skill)

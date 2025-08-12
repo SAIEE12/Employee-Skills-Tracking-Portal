@@ -9,6 +9,26 @@ export interface User {
   department?: string;
   experience?: number;
   password?: string; // For user creation only
+  domain_id?: string;
+}
+
+export interface Domain {
+  id: string;
+  name: string;
+  description?: string;
+}
+
+export interface Skill {
+  id: string;
+  name: string;
+  category: string;
+  description?: string;
+  domain_id: string;
+}
+
+export interface UserWithSkills extends User {
+  skills: Skill[];
+  domain?: Domain;
 }
 
 export interface Employee extends User {
@@ -67,11 +87,31 @@ export interface Assessment {
   feedback?: string;
 }
 
-export interface Skill {
-  id: string;
+// Admin Types
+export interface UserCreateData {
+  email: string;
   name: string;
-  category: string;
-  description?: string;
+  password: string;
+  role: UserRole;
+  department?: string;
+  experience?: number;
+  domain_id: string;
+  skill_ids: string[];
+}
+
+export interface UserFilter {
+  domain_id?: string;
+  skill_ids?: string[];
+  role?: UserRole;
+  department?: string;
+}
+
+export interface StatsData {
+  total_users: number;
+  total_skills: number;
+  total_domains: number;
+  users_by_role: Record<string, number>;
+  skills_by_domain: Record<string, number>;
 }
 
 // API Response Types

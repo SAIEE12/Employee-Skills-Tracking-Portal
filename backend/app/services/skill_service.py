@@ -13,7 +13,8 @@ class SkillService:
             db=self.db,
             name=skill_data.name,
             category=skill_data.category,
-            description=skill_data.description
+            description=skill_data.description,
+            domain_id=skill_data.domain_id
         )
         return SkillResponse.model_validate(db_skill)
     
@@ -37,6 +38,11 @@ class SkillService:
             for skill in db_skills 
             if skill.category == category
         ]
+    
+    def get_skills_by_domain(self, domain_id: str) -> List[SkillResponse]:
+        """Get skills by domain."""
+        db_skills = crud.get_skills_by_domain(self.db, domain_id)
+        return [SkillResponse.model_validate(skill) for skill in db_skills]
     
     def update_skill(self, skill_id: str, skill_data: SkillUpdate) -> Optional[SkillResponse]:
         """Update skill."""

@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, ForeignKey, Text
+from sqlalchemy import Column, Integer, String, DateTime, Float, Boolean, ForeignKey, Text, Table
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 from .base import Base
@@ -6,6 +6,30 @@ import uuid
 
 def generate_uuid():
     return str(uuid.uuid4())
+
+# Association table for User-Skill relationship
+user_skills = Table(
+    "user_skills",
+    Base.metadata,
+    Column("user_id", String, ForeignKey("users.id"), primary_key=True),
+    Column("skill_id", String, ForeignKey("skills.id"), primary_key=True),
+    Column("proficiency_level", Integer, default=1),  # 1-5 scale
+    Column("created_at", DateTime(timezone=True), server_default=func.now()),
+    Column("updated_at", DateTime(timezone=True), onupdate=func.now())
+)
+
+class Domain(Base):
+    __tablename__ = "domains"
+    
+    id = Column(String, primary_key=True, default=generate_uuid)
+    name = Column(String, nullable=False, unique=True)
+    description = Column(Text, nullable=True)
+    created_at = Column(DateTime(timezone=True), server_default=func.now())
+    updated_at = Column(DateTime(timezone=True), onupdate=func.now())
+    
+    # Relationships
+    skills = relationship("Skill", back_populates="domain")
+    users = relationship("User", back_populates="domain")
 
 class User(Base):
     __tablename__ = "users"
@@ -18,15 +42,18 @@ class User(Base):
     avatar = Column(String, nullable=True)
     department = Column(String, nullable=True)
     experience = Column(Integer, nullable=True)
+    domain_id = Column(String, ForeignKey("domains.id"), nullable=True)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
+    domain = relationship("Domain", back_populates="users")
     scores = relationship("Score", foreign_keys="Score.employee_id", back_populates="employee")
     trainer_scores = relationship("Score", foreign_keys="Score.trainer_id", back_populates="trainer")
     notifications = relationship("Notification", back_populates="user")
     learning_paths = relationship("LearningPath", foreign_keys="LearningPath.employee_id", back_populates="employee")
     assigned_learning_paths = relationship("LearningPath", foreign_keys="LearningPath.assigned_by", back_populates="assigned_by_user")
+    skills = relationship("Skill", secondary=user_skills, back_populates="users")
 
 class Skill(Base):
     __tablename__ = "skills"
@@ -35,11 +62,14 @@ class Skill(Base):
     name = Column(String, nullable=False, unique=True)
     category = Column(String, nullable=False)
     description = Column(Text, nullable=True)
+    domain_id = Column(String, ForeignKey("domains.id"), nullable=False)
     created_at = Column(DateTime(timezone=True), server_default=func.now())
     updated_at = Column(DateTime(timezone=True), onupdate=func.now())
     
     # Relationships
+    domain = relationship("Domain", back_populates="skills")
     scores = relationship("Score", back_populates="skill")
+    users = relationship("User", secondary=user_skills, back_populates="skills")
 
 class Score(Base):
     __tablename__ = "scores"
