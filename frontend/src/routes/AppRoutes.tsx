@@ -7,6 +7,7 @@ import DashboardPage from '@/pages/DashboardPage';
 import SkillsPage from '@/pages/SkillsPage';
 import ProfilePage from '@/pages/ProfilePage';
 import UsersPage from '@/pages/UsersPage';
+import ManagersPage from '@/pages/manager/ManagersPage';
 import EmployeeDashboard from '@/pages/employee/EmployeeDashboard';
 import TrainerDashboard from '@/pages/trainer/TrainerDashboard';
 import ManagerDashboard from '@/pages/manager/ManagerDashboard';
@@ -77,6 +78,17 @@ export function AppRoutes() {
           <ProtectedRoute requiredRole="manager">
             <DashboardLayout>
               <UsersPage />
+            </DashboardLayout>
+          </ProtectedRoute>
+        } 
+      />
+
+      <Route 
+        path="/managers" 
+        element={
+          <ProtectedRoute requiredRole="super-user">
+            <DashboardLayout>
+              <ManagersPage />
             </DashboardLayout>
           </ProtectedRoute>
         } 
