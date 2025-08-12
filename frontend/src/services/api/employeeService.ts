@@ -103,12 +103,12 @@ async updateEmployee(employee: User): Promise<User | null> {
 
    async getAllUsers(): Promise<User[]> {
     try {
-      const [employees, trainers] = await Promise.all([
+      const [employees, trainers, managers] = await Promise.all([
         fetch(`${API_BASE_URL}/employees`, { headers: this.getAuthHeaders() }).then(res => res.json()),
         fetch(`${API_BASE_URL}/trainers`, { headers: this.getAuthHeaders() }).then(res => res.json()),
-        // fetch(`${API_BASE_URL}/managers`, { headers: this.getAuthHeaders() }).then(res => res.json()),
+        fetch(`${API_BASE_URL}/managers`, { headers: this.getAuthHeaders() }).then(res => res.json()),
       ]);
-      return [...employees, ...trainers];
+      return [...employees, ...trainers, ...managers];
     } catch (error) {
       console.error('Get all users error:', error);
       return [];
