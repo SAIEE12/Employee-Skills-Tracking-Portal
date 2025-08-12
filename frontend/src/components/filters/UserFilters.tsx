@@ -33,7 +33,7 @@ export function UserFilters({ filters, onFiltersChange, departments }: UserFilte
   const clearFilters = () => {
     onFiltersChange({
       search: '',
-      role: '',
+      role: 'all',
       department: '',
       experienceMin: 0,
       experienceMax: 50,
@@ -41,6 +41,7 @@ export function UserFilters({ filters, onFiltersChange, departments }: UserFilte
       sortOrder: 'asc',
     });
   };
+
 
   const getActiveFilterCount = () => {
     let count = 0;
@@ -135,7 +136,7 @@ export function UserFilters({ filters, onFiltersChange, departments }: UserFilte
                   <SelectValue placeholder="All roles" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">All roles</SelectItem>
+                  <SelectItem value="all">All roles</SelectItem>
                   <SelectItem value="employee">Employee</SelectItem>
                   <SelectItem value="trainer">Trainer</SelectItem>
                   <SelectItem value="manager">Manager</SelectItem>

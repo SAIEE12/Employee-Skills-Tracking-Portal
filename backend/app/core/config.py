@@ -15,7 +15,7 @@ class Settings(BaseSettings):
     access_token_expire_minutes: int = 30
     
     # CORS
-    frontend_url: str = "http://localhost:8080"
+    frontend_url: str = "http://localhost:8081"
     
     # Email (for future use)
     smtp_host: Optional[str] = None

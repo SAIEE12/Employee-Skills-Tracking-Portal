@@ -2,16 +2,29 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 from ...db.session import get_db
 from ...core.security import authenticate_user, create_access_token
-from ...schemas.auth import UserLogin, UserRegister, Token, UserResponse
+from ...schemas.auth import UserLogin, UserRegister, Token, UserResponse, LoginResponse
 from ...db import crud
 from ...utils.email import send_welcome_email
 from ...api.dependencies import get_current_user_dependency
 
 router = APIRouter(prefix="/auth", tags=["authentication"])
 
-@router.post("/login", response_model=Token)
+# @router.post("/login", response_model=Token)
+# def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
+#     """Login user and return access token."""
+#     user = authenticate_user(db, user_credentials.email, user_credentials.password)
+#     if not user:
+#         raise HTTPException(
+#             status_code=status.HTTP_401_UNAUTHORIZED,
+#             detail="Incorrect email or password",
+#             headers={"WWW-Authenticate": "Bearer"},
+#         )
+    # 
+    # access_token = create_access_token(data={"sub": user.id})
+    # return {"access_token": access_token, "token_type": "bearer"}
+
+@router.post("/login", response_model=LoginResponse)
 def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
-    """Login user and return access token."""
     user = authenticate_user(db, user_credentials.email, user_credentials.password)
     if not user:
         raise HTTPException(
@@ -19,9 +32,14 @@ def login(user_credentials: UserLogin, db: Session = Depends(get_db)):
             detail="Incorrect email or password",
             headers={"WWW-Authenticate": "Bearer"},
         )
-    
+
     access_token = create_access_token(data={"sub": user.id})
-    return {"access_token": access_token, "token_type": "bearer"}
+    return {
+        "access_token": access_token,
+        "token_type": "bearer",
+        "user": UserResponse.model_validate(user)
+    }
+
 
 @router.post("/register", response_model=UserResponse)
 def register(user_data: UserRegister, db: Session = Depends(get_db)):

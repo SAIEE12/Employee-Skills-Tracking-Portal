@@ -41,31 +41,44 @@ class AuthService {
     }
   ];
 
-  async login(email: string, password: string): Promise<LoginResponse> {
-    if (USE_MOCK_DATA) {
-      return this.mockLogin(email, password);
-    }
-
-    try {
-      const response = await fetch(`${API_BASE_URL}/auth/login`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, password }),
-      });
-
-      if (response.ok) {
-        const data = await response.json();
-        // Store token and user data
-        localStorage.setItem('authToken', data.access_token);
-        localStorage.setItem('user', JSON.stringify(data.user));
-        return { success: true, user: data.user, token: data.access_token };
-      }
-      return { success: false };
-    } catch (error) {
-      console.error('Login error:', error);
-      return { success: false };
-    }
+async login(email: string, password: string): Promise<LoginResponse> {
+  if (USE_MOCK_DATA) {
+    return this.mockLogin(email, password);
   }
+
+  try {
+    const response = await fetch(`${API_BASE_URL}/auth/login`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    });
+
+    if (!response.ok) {
+      return { success: false };
+    }
+
+    const data = await response.json();
+    console.log('Backend login response:', data);
+
+    if (data.access_token && data.user) {
+      localStorage.setItem('authToken', data.access_token);
+      localStorage.setItem('user', JSON.stringify(data.user));
+
+      return {
+        success: true,
+        user: data.user,
+        token: data.access_token,
+      };
+    }
+
+    return { success: false };
+  } catch (error) {
+    console.error('Login error:', error);
+    return { success: false };
+  }
+}
+
+
 
   async logout(): Promise<void> {
     // Clear local storage

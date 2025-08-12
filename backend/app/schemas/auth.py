@@ -32,3 +32,5 @@ class UserResponse(BaseModel):
     
     class Config:
         from_attributes = True 
+class LoginResponse(Token):
+    user: UserResponse

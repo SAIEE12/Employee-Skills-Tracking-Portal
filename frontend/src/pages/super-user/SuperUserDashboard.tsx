@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo,useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -12,70 +12,103 @@ import { UserPlus, Edit, Trash2, Users, Settings, Shield } from 'lucide-react';
 import { User, UserRole } from '@/services/api/types';
 import { useToast } from '@/hooks/use-toast';
 import { UserFilters, FilterState } from '@/components/filters/UserFilters';
+import { employeeService } from '@/services/api/employeeService';
 
-// Mock data for demonstration
-const mockUsers: User[] = [
-  { id: '1', email: 'john.employee@company.com', name: 'John Smith', role: 'employee', department: 'Engineering', experience: 3 },
-  { id: '2', email: 'sarah.trainer@company.com', name: 'Sarah Johnson', role: 'trainer', department: 'Training', experience: 8 },
-  { id: '3', email: 'mike.manager@company.com', name: 'Mike Wilson', role: 'manager', department: 'Management', experience: 12 },
-];
+//  Mock data (for development)
+// const mockUsers: User[] = [
+//   { id: '1', email: 'john@company.com', name: 'John Smith', role: 'employee', department: 'Engineering', experience: 3 },
+//   { id: '2', email: 'sarah@company.com', name: 'Sarah Johnson', role: 'trainer', department: 'Training', experience: 8 },
+// ];
 
 export default function SuperUserDashboard() {
-  const [users, setUsers] = useState<User[]>(mockUsers);
+  const [users, setUsers] = useState<User[]>([]);
+  const [loading, setLoading] = useState(true);
   const [isAddUserOpen, setIsAddUserOpen] = useState(false);
   const [editingUser, setEditingUser] = useState<User | null>(null);
   const [newUser, setNewUser] = useState<Partial<User>>({});
   const [filters, setFilters] = useState<FilterState>({
     search: '',
-    role: '',
+    role: 'all',
     department: '',
     experienceMin: 0,
     experienceMax: 50,
     sortBy: 'name',
     sortOrder: 'asc',
   });
+
+  
   const { toast } = useToast();
 
-  // Get unique departments for filter
-  const departments = useMemo(() => 
-    Array.from(new Set(users.map(user => user.department).filter(Boolean))),
+  //  Fetch users from DB
+  const fetchUsers = async () => {
+    try {
+      const allUsers = await employeeService.getAllUsers();
+      setUsers(allUsers);
+    } catch (error) {
+      toast({
+        title: 'Error loading users',
+        description: 'Failed to fetch users from database',
+        variant: 'destructive',
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchUsers();
+  }, []);
+
+  const departments = useMemo(
+    () =>
+      Array.from(new Set(users.map((user) => user.department).filter(Boolean))),
     [users]
   );
 
-  // Apply filters and sorting
-  const filteredUsers = useMemo(() => {
-    let filtered = users.filter(user => {
-      const matchesSearch = !filters.search || 
-        user.name.toLowerCase().includes(filters.search.toLowerCase()) ||
-        user.email.toLowerCase().includes(filters.search.toLowerCase());
-      
-      const matchesRole = !filters.role || user.role === filters.role;
-      const matchesDepartment = !filters.department || user.department === filters.department;
-      const matchesExperience = user.experience >= filters.experienceMin && 
-        user.experience <= filters.experienceMax;
+const filteredUsers = useMemo(() => {
+  let filtered = users.filter((user) => {
+    const matchesSearch =
+      !filters.search ||
+      [user.name, user.email]
+        .filter(Boolean)
+        .some(field =>
+          field.toLowerCase().includes(filters.search.toLowerCase())
+        );
 
-      return matchesSearch && matchesRole && matchesDepartment && matchesExperience;
-    });
+    const matchesRole =
+      !filters.role ||
+      filters.role === 'all' ||
+      user.role?.toLowerCase() === filters.role.toLowerCase();
 
-    // Apply sorting
+    const matchesDept =
+      !filters.department ||
+      user.department?.trim().toLowerCase() === filters.department.trim().toLowerCase();
+
+    const matchesExp =
+      Number(user.experience) >= filters.experienceMin &&
+      Number(user.experience) <= filters.experienceMax;
+
+    return matchesSearch && matchesRole && matchesDept && matchesExp;
+  });
+
+    // ✅ Fix: handle null/undefined for email, department, experience
     filtered.sort((a, b) => {
-      let aValue: any = a[filters.sortBy];
-      let bValue: any = b[filters.sortBy];
+      let aVal: any = a[filters.sortBy] ?? '';
+      let bVal: any = b[filters.sortBy] ?? '';
 
-      if (typeof aValue === 'string') {
-        aValue = aValue.toLowerCase();
-        bValue = bValue.toLowerCase();
-      }
+      if (typeof aVal === 'string') aVal = aVal.toLowerCase();
+      if (typeof bVal === 'string') bVal = bVal.toLowerCase();
 
-      if (filters.sortOrder === 'asc') {
-        return aValue < bValue ? -1 : aValue > bValue ? 1 : 0;
-      } else {
-        return aValue > bValue ? -1 : aValue < bValue ? 1 : 0;
-      }
+      return filters.sortOrder === 'asc'
+        ? aVal < bVal ? -1 : aVal > bVal ? 1 : 0
+        : aVal > bVal ? -1 : aVal < bVal ? 1 : 0;
     });
 
-    return filtered;
-  }, [users, filters]);
+
+  return filtered;
+}, [users, filters]);
+
+
 
   const getRoleBadgeVariant = (role: UserRole) => {
     switch (role) {
@@ -86,61 +119,78 @@ export default function SuperUserDashboard() {
     }
   };
 
-  const handleAddUser = () => {
+  //  Add user to DB
+  const handleAddUser = async () => {
     if (!newUser.name || !newUser.email || !newUser.role || !newUser.password) {
       toast({
-        title: "Error",
-        description: "Please fill in all required fields including password",
-        variant: "destructive",
+        title: 'Missing Fields',
+        description: 'Please fill in all required fields.',
+        variant: 'destructive',
       });
       return;
     }
 
-    const user: User = {
-      id: Date.now().toString(),
-      name: newUser.name,
-      email: newUser.email,
-      role: newUser.role as UserRole,
-      department: newUser.department || '',
-      experience: newUser.experience || 0,
+    try {
+      await employeeService.createEmployee(newUser as any);
+      await fetchUsers(); // refresh from DB
+      setNewUser({});
+      setIsAddUserOpen(false);
+      toast({ title: 'User created successfully' });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to add user to the database.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+//  Update user in DB
+const handleEditUser = async () => {
+  if (!editingUser) return;
+
+  try {
+    const updated = await employeeService.updateEmployee(editingUser);
+    
+    if (!updated) {
+      throw new Error('Update failed');
+    }
+
+    await fetchUsers(); // refresh user list
+    setEditingUser(null);
+    toast({ title: 'User updated successfully' });
+  } catch (error) {
+    toast({
+      title: 'Error',
+      description: 'Failed to update user in the database.',
+      variant: 'destructive',
+    });
+  }
+};
+
+
+  //  Delete user from DB
+  const handleDeleteUser = async (userId: string) => {
+    try {
+      await employeeService.deleteEmployee(userId);
+      await fetchUsers();
+      toast({ title: 'User deleted' });
+    } catch (error) {
+      toast({
+        title: 'Error',
+        description: 'Failed to delete user.',
+        variant: 'destructive',
+      });
+    }
+  };
+
+    const userStats = {
+      total: users.length,
+      employees: users.filter((u) => u.role === 'employee').length,
+      trainers: users.filter((u) => u.role === 'trainer').length,
+      managers: users.filter((u) => u.role === 'manager').length,
     };
 
-    setUsers([...users, user]);
-    setNewUser({});
-    setIsAddUserOpen(false);
-    toast({
-      title: "Success",
-      description: "User added successfully",
-    });
-  };
-
-  const handleEditUser = () => {
-    if (!editingUser) return;
-
-    setUsers(users.map(user => 
-      user.id === editingUser.id ? editingUser : user
-    ));
-    setEditingUser(null);
-    toast({
-      title: "Success",
-      description: "User updated successfully",
-    });
-  };
-
-  const handleDeleteUser = (userId: string) => {
-    setUsers(users.filter(user => user.id !== userId));
-    toast({
-      title: "Success",
-      description: "User deleted successfully",
-    });
-  };
-
-  const userStats = {
-    total: filteredUsers.length,
-    employees: filteredUsers.filter(u => u.role === 'employee').length,
-    trainers: filteredUsers.filter(u => u.role === 'trainer').length,
-    managers: filteredUsers.filter(u => u.role === 'manager').length,
-  };
 
   return (
     <div className="space-y-8">

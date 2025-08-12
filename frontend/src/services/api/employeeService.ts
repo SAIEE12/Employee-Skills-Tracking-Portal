@@ -12,7 +12,6 @@ class EmployeeService {
     if (USE_MOCK_DATA) {
       return this.getMockEmployees();
     }
-
     try {
       const response = await fetch(`${API_BASE_URL}/employees`, {
         headers: this.getAuthHeaders(),
@@ -44,7 +43,6 @@ class EmployeeService {
     if (USE_MOCK_DATA) {
       return this.mockCreateEmployee(employee);
     }
-
     try {
       const response = await fetch(`${API_BASE_URL}/employees`, {
         method: 'POST',
@@ -58,23 +56,33 @@ class EmployeeService {
     }
   }
 
-  async updateEmployee(employee: User): Promise<User | null> {
-    if (USE_MOCK_DATA) {
-      return this.mockUpdateEmployee(employee);
-    }
+async updateEmployee(employee: User): Promise<User | null> {
+  if (USE_MOCK_DATA) {
+    return this.mockUpdateEmployee(employee);
+  }
 
-    try {
-      const response = await fetch(`${API_BASE_URL}/employees/${employee.id}`, {
-        method: 'PUT',
-        headers: { ...this.getAuthHeaders(), 'Content-Type': 'application/json' },
-        body: JSON.stringify(employee),
-      });
-      return response.ok ? await response.json() : null;
-    } catch (error) {
-      console.error('Update employee error:', error);
+  try {
+    const { id, ...payload } = employee; // 🛠️ Remove ID from body
+    const response = await fetch(`${API_BASE_URL}/employees/${id}`, {
+      method: 'PUT',
+      headers: {
+        ...this.getAuthHeaders(),
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify(payload),
+    });
+
+    if (!response.ok) {
+      console.error(`Failed to update employee ${id}:`, response.statusText);
       return null;
     }
+
+    return await response.json();
+  } catch (error) {
+    console.error('Update employee error:', error);
+    return null;
   }
+}
 
   async deleteEmployee(id: string): Promise<boolean> {
     if (USE_MOCK_DATA) {
@@ -90,6 +98,20 @@ class EmployeeService {
     } catch (error) {
       console.error('Delete employee error:', error);
       return false;
+    }
+  }
+
+   async getAllUsers(): Promise<User[]> {
+    try {
+      const [employees, trainers] = await Promise.all([
+        fetch(`${API_BASE_URL}/employees`, { headers: this.getAuthHeaders() }).then(res => res.json()),
+        fetch(`${API_BASE_URL}/trainers`, { headers: this.getAuthHeaders() }).then(res => res.json()),
+        // fetch(`${API_BASE_URL}/managers`, { headers: this.getAuthHeaders() }).then(res => res.json()),
+      ]);
+      return [...employees, ...trainers];
+    } catch (error) {
+      console.error('Get all users error:', error);
+      return [];
     }
   }
 
