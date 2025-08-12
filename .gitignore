@@ -24,5 +24,3 @@ dist-ssr
 *.sw?
 *.pyc
 __pycache__/
-*.pyc
-__pycache__/
