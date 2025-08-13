@@ -6,7 +6,7 @@ A comprehensive web application for tracking employee skills, assessments, and l
 
 ### 🚀 Core Functionality
 - **User Management**: Employee, Trainer, Manager, and Super-User roles
-- **Skill Tracking**: Domain-based skill organization and assessment
+- **Skill Tracking**: Domain-based skill organization and assessmen
 - **Learning Paths**: Structured learning journeys with progress tracking
 - **Real-time Analytics**: Performance metrics and skill distribution
 - **Notification System**: Automated alerts and updates
